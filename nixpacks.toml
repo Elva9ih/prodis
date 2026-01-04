@@ -1,4 +1,3 @@
-# Database reset deploy - v2
 [phases.setup]
 nixPkgs = ['php82', 'php82Extensions.pdo', 'php82Extensions.pdo_pgsql', 'php82Extensions.pgsql', 'php82Extensions.mbstring', 'php82Extensions.xml', 'php82Extensions.curl', 'php82Extensions.zip']
 
@@ -12,4 +11,4 @@ cmds = [
 ]
 
 [start]
-cmd = 'rm -rf public/storage && php artisan storage:link && php artisan db:wipe --force && php artisan migrate --force && php artisan db:seed --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=$PORT'
+cmd = 'rm -rf public/storage && php artisan storage:link && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=$PORT'

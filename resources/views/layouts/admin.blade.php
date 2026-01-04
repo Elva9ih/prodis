@@ -267,11 +267,6 @@
                     <i class="bi bi-graph-up"></i> {{ __('admin.nav.reports') }}
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('admin.mobile-connection*') ? 'active' : '' }}" href="{{ route('admin.mobile-connection.index') }}">
-                    <i class="bi bi-qr-code"></i> {{ __('admin.nav.mobile_connection') }}
-                </a>
-            </li>
         </ul>
 
         <div class="mt-auto p-3" style="position: absolute; bottom: 0; width: 100%;">
