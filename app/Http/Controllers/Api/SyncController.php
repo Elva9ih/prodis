@@ -257,71 +257,22 @@ class SyncController extends Controller
     }
 
     /**
-     * Compress base64 image and return as smaller base64 for database storage
-     * Target: ~50KB per image for efficient database storage
+     * Process base64 image for database storage
+     * Mobile app already compresses to 0.5 quality, so just validate and return
      */
     private function compressBase64Image(string $base64Data): ?string
     {
         try {
-            // Remove data URI prefix if present
-            $base64Data = preg_replace('/^data:image\/\w+;base64,/', '', $base64Data);
-            $imageData = base64_decode($base64Data);
-
-            if ($imageData === false) {
-                return null;
+            // Ensure proper data URI format
+            if (strpos($base64Data, 'data:image') === 0) {
+                return $base64Data;
             }
 
-            // Create image from binary data
-            $image = @imagecreatefromstring($imageData);
-            if ($image === false) {
-                // If GD fails, return original (truncated if too large)
-                Log::warning('GD image creation failed, storing original');
-                return 'data:image/jpeg;base64,' . $base64Data;
-            }
-
-            // Get original dimensions
-            $originalWidth = imagesx($image);
-            $originalHeight = imagesy($image);
-
-            // Target max dimension for thumbnails (keeps file size small)
-            $maxDimension = 800;
-
-            // Calculate new dimensions maintaining aspect ratio
-            if ($originalWidth > $maxDimension || $originalHeight > $maxDimension) {
-                if ($originalWidth > $originalHeight) {
-                    $newWidth = $maxDimension;
-                    $newHeight = (int) ($originalHeight * ($maxDimension / $originalWidth));
-                } else {
-                    $newHeight = $maxDimension;
-                    $newWidth = (int) ($originalWidth * ($maxDimension / $originalHeight));
-                }
-
-                // Create resized image
-                $resized = imagecreatetruecolor($newWidth, $newHeight);
-
-                // Preserve transparency for PNG
-                imagealphablending($resized, false);
-                imagesavealpha($resized, true);
-
-                // Resize
-                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
-
-                imagedestroy($image);
-                $image = $resized;
-            }
-
-            // Capture JPEG output with compression (quality 60 for good balance)
-            ob_start();
-            imagejpeg($image, null, 60);
-            $compressedData = ob_get_clean();
-            imagedestroy($image);
-
-            // Return as data URI
-            return 'data:image/jpeg;base64,' . base64_encode($compressedData);
-        } catch (\Exception $e) {
-            Log::error('Image compression error: ' . $e->getMessage());
-            // Return original if compression fails
+            // Add data URI prefix if missing
             return 'data:image/jpeg;base64,' . $base64Data;
+        } catch (\Exception $e) {
+            Log::error('Image processing error: ' . $e->getMessage());
+            return null;
         }
     }
 }
