@@ -40,9 +40,10 @@ class ReportController extends Controller
             ->withCount(['establishments as fournisseurs_count' => function ($query) use ($startDate) {
                 $query->where('type', 'fournisseur')->where('created_at', '>=', $startDate);
             }])
-            ->having('establishments_count', '>', 0)
-            ->orderByDesc('establishments_count')
-            ->get();
+            ->get()
+            ->filter(fn ($agent) => $agent->establishments_count > 0)
+            ->sortByDesc('establishments_count')
+            ->values();
 
         // Daily breakdown
         $dailyStats = $this->getDailyStats($startDate);
