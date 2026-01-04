@@ -15,10 +15,10 @@ return new class extends Migration
     {
         Schema::table('establishments', function (Blueprint $table) {
             // Store compressed base64 images directly in database
-            // Using TEXT type which can store up to ~65KB (enough for compressed thumbnails)
+            // Using MEDIUMTEXT for larger storage capacity
             // photos_data stores JSON array of {data: base64, label: string}
-            $table->text('photo_data')->nullable()->after('photo');
-            $table->json('photos_data')->nullable()->after('photos_json');
+            $table->mediumText('photo_data')->nullable()->after('photo');
+            $table->mediumText('photos_data')->nullable()->after('photos_json');
         });
     }
 
