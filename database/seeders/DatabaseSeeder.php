@@ -14,33 +14,25 @@ class DatabaseSeeder extends Seeder
     {
         // Create admin user
         User::firstOrCreate(
-            ['email' => 'admin@fieldcollect.local'],
+            ['email' => 'admin@prodis.com'],
             [
                 'name' => 'Administrator',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('admin123'),
                 'role' => 'admin',
                 'is_active' => true,
             ]
         );
 
-        // Create sample agents
-        $agents = [
-            ['name' => 'Agent Ahmed', 'email' => 'ahmed@fieldcollect.local'],
-            ['name' => 'Agent Fatima', 'email' => 'fatima@fieldcollect.local'],
-            ['name' => 'Agent Mohamed', 'email' => 'mohamed@fieldcollect.local'],
-        ];
-
-        foreach ($agents as $agent) {
-            User::firstOrCreate(
-                ['email' => $agent['email']],
-                [
-                    'name' => $agent['name'],
-                    'password' => Hash::make('agent123'),
-                    'role' => 'agent',
-                    'is_active' => true,
-                ]
-            );
-        }
+        // Create agent user
+        User::firstOrCreate(
+            ['email' => 'agent@prodis.com'],
+            [
+                'name' => 'Agent',
+                'password' => Hash::make('agent123'),
+                'role' => 'agent',
+                'is_active' => true,
+            ]
+        );
 
         // Create questions for CLIENTS
         $servicesQuestion = Question::firstOrCreate(
