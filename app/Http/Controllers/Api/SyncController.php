@@ -57,32 +57,34 @@ class SyncController extends Controller
 
             try {
                 DB::transaction(function () use ($data, $user, &$syncedUuids, &$successCount) {
-                    // Handle photo upload if provided (backward compatibility)
-                    $photoFilename = null;
+                    // Store compressed photo data directly in database (no file system needed for Railway free plan)
+                    $photoData = null;
+                    $photosData = null;
+
+                    // Handle single photo (backward compatibility)
                     if (!empty($data['photo'])) {
-                        $photoFilename = $this->saveBase64Photo($data['photo'], $data['uuid']);
+                        $photoData = $this->compressBase64Image($data['photo']);
                     }
 
-                    // Handle multiple photos if provided
-                    $photosJson = null;
+                    // Handle multiple photos
                     if (!empty($data['photos']) && is_array($data['photos'])) {
-                        $savedPhotos = [];
-                        foreach ($data['photos'] as $index => $photo) {
+                        $compressedPhotos = [];
+                        foreach ($data['photos'] as $photo) {
                             if (!empty($photo['data'])) {
-                                $filename = $this->saveBase64Photo($photo['data'], $data['uuid'] . '_' . $index);
-                                if ($filename) {
-                                    $savedPhotos[] = [
-                                        'filename' => $filename,
+                                $compressedData = $this->compressBase64Image($photo['data']);
+                                if ($compressedData) {
+                                    $compressedPhotos[] = [
+                                        'data' => $compressedData,
                                         'label' => $photo['label'] ?? null,
                                     ];
                                 }
                             }
                         }
-                        if (!empty($savedPhotos)) {
-                            $photosJson = $savedPhotos;
+                        if (!empty($compressedPhotos)) {
+                            $photosData = $compressedPhotos;
                             // If no main photo set, use first photo
-                            if (!$photoFilename && isset($savedPhotos[0])) {
-                                $photoFilename = $savedPhotos[0]['filename'];
+                            if (!$photoData && isset($compressedPhotos[0])) {
+                                $photoData = $compressedPhotos[0]['data'];
                             }
                         }
                     }
@@ -102,8 +104,8 @@ class SyncController extends Controller
                         'whatsapp_country_code' => $data['whatsapp_country_code'] ?? null,
                         'whatsapp_number' => $data['whatsapp_number'] ?? null,
                         'remarks' => $data['remarks'] ?? null,
-                        'photo' => $photoFilename,
-                        'photos_json' => $photosJson,
+                        'photo_data' => $photoData,
+                        'photos_data' => $photosData,
                         'latitude' => $data['latitude'],
                         'longitude' => $data['longitude'],
                         'city' => $city,
@@ -255,9 +257,10 @@ class SyncController extends Controller
     }
 
     /**
-     * Save base64 encoded photo to storage
+     * Compress base64 image and return as smaller base64 for database storage
+     * Target: ~50KB per image for efficient database storage
      */
-    private function saveBase64Photo(string $base64Data, string $uuid): ?string
+    private function compressBase64Image(string $base64Data): ?string
     {
         try {
             // Remove data URI prefix if present
@@ -268,16 +271,57 @@ class SyncController extends Controller
                 return null;
             }
 
-            // Generate unique filename
-            $filename = $uuid . '_' . Str::random(8) . '.jpg';
+            // Create image from binary data
+            $image = @imagecreatefromstring($imageData);
+            if ($image === false) {
+                // If GD fails, return original (truncated if too large)
+                Log::warning('GD image creation failed, storing original');
+                return 'data:image/jpeg;base64,' . $base64Data;
+            }
 
-            // Store the file
-            Storage::disk('public')->put('establishments/' . $filename, $imageData);
+            // Get original dimensions
+            $originalWidth = imagesx($image);
+            $originalHeight = imagesy($image);
 
-            return $filename;
+            // Target max dimension for thumbnails (keeps file size small)
+            $maxDimension = 800;
+
+            // Calculate new dimensions maintaining aspect ratio
+            if ($originalWidth > $maxDimension || $originalHeight > $maxDimension) {
+                if ($originalWidth > $originalHeight) {
+                    $newWidth = $maxDimension;
+                    $newHeight = (int) ($originalHeight * ($maxDimension / $originalWidth));
+                } else {
+                    $newHeight = $maxDimension;
+                    $newWidth = (int) ($originalWidth * ($maxDimension / $originalHeight));
+                }
+
+                // Create resized image
+                $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+                // Preserve transparency for PNG
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+
+                // Resize
+                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
+
+                imagedestroy($image);
+                $image = $resized;
+            }
+
+            // Capture JPEG output with compression (quality 60 for good balance)
+            ob_start();
+            imagejpeg($image, null, 60);
+            $compressedData = ob_get_clean();
+            imagedestroy($image);
+
+            // Return as data URI
+            return 'data:image/jpeg;base64,' . base64_encode($compressedData);
         } catch (\Exception $e) {
-            Log::error('Photo save error: ' . $e->getMessage());
-            return null;
+            Log::error('Image compression error: ' . $e->getMessage());
+            // Return original if compression fails
+            return 'data:image/jpeg;base64,' . $base64Data;
         }
     }
 }

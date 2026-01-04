@@ -23,7 +23,9 @@ class Establishment extends Model
         'whatsapp_number',
         'remarks',
         'photo',
+        'photo_data',
         'photos_json',
+        'photos_data',
         'latitude',
         'longitude',
         'city',
@@ -43,6 +45,7 @@ class Establishment extends Model
         'synced_at' => 'datetime',
         'phones_json' => 'array',
         'photos_json' => 'array',
+        'photos_data' => 'array',
     ];
 
     // Prevent location updates after creation

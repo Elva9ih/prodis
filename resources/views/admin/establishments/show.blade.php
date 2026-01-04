@@ -87,7 +87,43 @@
                     </div>
                 </div>
 
-                @if($establishment->photos_json && count($establishment->photos_json) > 0)
+                {{-- Photos stored in database as base64 (new method - Railway free plan) --}}
+                @if($establishment->photos_data && count($establishment->photos_data) > 0)
+                    <hr>
+                    <h6 class="text-muted mb-3">{{ __('admin.establishments.photo') }}</h6>
+                    <div class="row">
+                        @foreach($establishment->photos_data as $photo)
+                            <div class="col-md-6 mb-4">
+                                <div class="photo-card">
+                                    <a href="{{ $photo['data'] }}" target="_blank" class="photo-link">
+                                        <img src="{{ $photo['data'] }}" alt="{{ __('admin.establishments.photo') }}" class="photo-image">
+                                    </a>
+                                    @if(!empty($photo['label']))
+                                        <div class="photo-label-container">
+                                            <i class="bi bi-tag-fill me-1"></i>
+                                            <span class="photo-label-text">{{ $photo['label'] }}</span>
+                                        </div>
+                                    @else
+                                        <div class="photo-label-container photo-label-empty">
+                                            <i class="bi bi-image me-1"></i>
+                                            <span class="photo-label-text">{{ __('admin.establishments.photo') }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                {{-- Single photo stored in database as base64 --}}
+                @elseif($establishment->photo_data)
+                    <hr>
+                    <h6 class="text-muted mb-3">{{ __('admin.establishments.photo') }}</h6>
+                    <div class="text-center">
+                        <a href="{{ $establishment->photo_data }}" target="_blank">
+                            <img src="{{ $establishment->photo_data }}" alt="{{ __('admin.establishments.photo') }}" class="img-fluid rounded" style="max-height: 300px;">
+                        </a>
+                    </div>
+                {{-- Legacy: Photos stored as files (old method) --}}
+                @elseif($establishment->photos_json && count($establishment->photos_json) > 0)
                     <hr>
                     <h6 class="text-muted mb-3">{{ __('admin.establishments.photo') }}</h6>
                     <div class="row">
@@ -112,6 +148,7 @@
                             </div>
                         @endforeach
                     </div>
+                {{-- Legacy: Single photo as file --}}
                 @elseif($establishment->photo)
                     <hr>
                     <h6 class="text-muted mb-3">{{ __('admin.establishments.photo') }}</h6>
