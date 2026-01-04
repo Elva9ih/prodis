@@ -1,3 +1,4 @@
+# Database reset deploy - v2
 [phases.setup]
 nixPkgs = ['php82', 'php82Extensions.pdo', 'php82Extensions.pdo_pgsql', 'php82Extensions.pgsql', 'php82Extensions.mbstring', 'php82Extensions.xml', 'php82Extensions.curl', 'php82Extensions.zip']
 
