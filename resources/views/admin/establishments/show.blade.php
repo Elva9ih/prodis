@@ -95,9 +95,9 @@
                         @foreach($establishment->photos_data as $photo)
                             <div class="col-md-6 mb-4">
                                 <div class="photo-card">
-                                    <a href="{{ $photo['data'] }}" target="_blank" class="photo-link">
+                                    <div class="photo-container">
                                         <img src="{{ $photo['data'] }}" alt="{{ __('admin.establishments.photo') }}" class="photo-image">
-                                    </a>
+                                    </div>
                                     @if(!empty($photo['label']))
                                         <div class="photo-label-container">
                                             <i class="bi bi-tag-fill me-1"></i>
@@ -118,9 +118,7 @@
                     <hr>
                     <h6 class="text-muted mb-3">{{ __('admin.establishments.photo') }}</h6>
                     <div class="text-center">
-                        <a href="{{ $establishment->photo_data }}" target="_blank">
-                            <img src="{{ $establishment->photo_data }}" alt="{{ __('admin.establishments.photo') }}" class="img-fluid rounded" style="max-height: 300px;">
-                        </a>
+                        <img src="{{ $establishment->photo_data }}" alt="{{ __('admin.establishments.photo') }}" class="img-fluid rounded" style="max-height: 300px;">
                     </div>
                 {{-- Legacy: Photos stored as files (old method) --}}
                 @elseif($establishment->photos_json && count($establishment->photos_json) > 0)
@@ -130,9 +128,9 @@
                         @foreach($establishment->photos_json as $photo)
                             <div class="col-md-6 mb-4">
                                 <div class="photo-card">
-                                    <a href="{{ asset('storage/establishments/' . $photo['filename']) }}" target="_blank" class="photo-link">
+                                    <div class="photo-container">
                                         <img src="{{ asset('storage/establishments/' . $photo['filename']) }}" alt="{{ __('admin.establishments.photo') }}" class="photo-image">
-                                    </a>
+                                    </div>
                                     @if(!empty($photo['label']))
                                         <div class="photo-label-container">
                                             <i class="bi bi-tag-fill me-1"></i>
@@ -153,9 +151,7 @@
                     <hr>
                     <h6 class="text-muted mb-3">{{ __('admin.establishments.photo') }}</h6>
                     <div class="text-center">
-                        <a href="{{ $establishment->photo_url }}" target="_blank">
-                            <img src="{{ $establishment->photo_url }}" alt="{{ __('admin.establishments.photo') }}" class="img-fluid rounded" style="max-height: 300px;">
-                        </a>
+                        <img src="{{ $establishment->photo_url }}" alt="{{ __('admin.establishments.photo') }}" class="img-fluid rounded" style="max-height: 300px;">
                     </div>
                 @endif
 
