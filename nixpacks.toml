@@ -6,13 +6,9 @@ cmds = ['composer install --no-dev --optimize-autoloader']
 
 [phases.build]
 cmds = [
-    'mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views',
-    'chmod -R 775 storage bootstrap/cache',
-    'php artisan storage:link',
-    'php artisan config:cache',
-    'php artisan route:cache',
-    'php artisan view:cache'
+    'mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public/establishments',
+    'chmod -R 775 storage bootstrap/cache'
 ]
 
 [start]
-cmd = 'php artisan serve --host=0.0.0.0 --port=$PORT'
+cmd = 'rm -rf public/storage && php artisan storage:link && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=$PORT'
