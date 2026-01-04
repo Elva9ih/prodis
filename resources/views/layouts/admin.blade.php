@@ -297,6 +297,12 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2 gap-md-3">
+                    <!-- QR Code Button -->
+                    <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#qrcodeModal" title="Mobile App Setup">
+                        <i class="bi bi-qr-code"></i>
+                        <span class="d-none d-lg-inline ms-1">Mobile Setup</span>
+                    </button>
+
                     <!-- Language Dropdown -->
                     <div class="dropdown lang-dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -362,6 +368,36 @@
         </div>
     </div>
 
+    <!-- QR Code Modal -->
+    <div class="modal fade" id="qrcodeModal" tabindex="-1" aria-labelledby="qrcodeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrcodeModalLabel">
+                        <i class="bi bi-qr-code me-2"></i>Mobile App Setup
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-3">Scan this QR code with the mobile app to configure the server connection</p>
+
+                    <!-- QR Code Container -->
+                    <div id="qrcode" class="mb-3 d-inline-block p-3 bg-white border rounded"></div>
+
+                    <!-- Server URL Display -->
+                    <div class="alert alert-info">
+                        <small class="d-block mb-2"><strong>Server URL:</strong></small>
+                        <code id="serverUrl" class="d-block">{{ rtrim(config('app.url'), '/') }}/api</code>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyServerUrl()">
+                        <i class="bi bi-clipboard"></i> Copy URL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -370,6 +406,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     <script>
         // Sidebar toggle functionality
@@ -401,7 +439,56 @@
                     }
                 });
             });
+
+            // QR Code generation
+            let qrcodeGenerated = false;
+            const qrcodeModal = document.getElementById('qrcodeModal');
+            if (qrcodeModal) {
+                qrcodeModal.addEventListener('shown.bs.modal', function () {
+                    if (!qrcodeGenerated) {
+                        const serverUrl = document.getElementById('serverUrl').textContent;
+                        const qrcodeContainer = document.getElementById('qrcode');
+
+                        // Clear any existing QR code
+                        qrcodeContainer.innerHTML = '';
+
+                        // Generate new QR code
+                        new QRCode(qrcodeContainer, {
+                            text: serverUrl,
+                            width: 256,
+                            height: 256,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+
+                        qrcodeGenerated = true;
+                    }
+                });
+            }
         });
+
+        // Copy server URL to clipboard
+        function copyServerUrl() {
+            const serverUrl = document.getElementById('serverUrl').textContent;
+            navigator.clipboard.writeText(serverUrl).then(function() {
+                // Show success feedback
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+
+                setTimeout(function() {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy URL');
+            });
+        }
     </script>
 
     @stack('scripts')
