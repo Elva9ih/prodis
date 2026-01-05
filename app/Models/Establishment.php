@@ -131,10 +131,30 @@ class Establishment extends Model
 
     public function getPhotoUrlAttribute(): ?string
     {
-        if (!$this->photo) {
-            return null;
+        // First check for base64 photos_data (new method - Railway)
+        if ($this->photos_data && is_array($this->photos_data) && count($this->photos_data) > 0) {
+            return $this->photos_data[0]['data'] ?? null;
         }
-        return asset('storage/establishments/' . $this->photo);
+
+        // Check for single base64 photo_data
+        if ($this->photo_data) {
+            return $this->photo_data;
+        }
+
+        // Check for file-based photos_json (legacy)
+        if ($this->photos_json && is_array($this->photos_json) && count($this->photos_json) > 0) {
+            $firstPhoto = $this->photos_json[0];
+            if (isset($firstPhoto['filename'])) {
+                return asset('storage/establishments/' . $firstPhoto['filename']);
+            }
+        }
+
+        // Check for single file photo (legacy)
+        if ($this->photo) {
+            return asset('storage/establishments/' . $this->photo);
+        }
+
+        return null;
     }
 
     public function getCityAttribute($value): ?string

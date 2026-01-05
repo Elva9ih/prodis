@@ -280,57 +280,63 @@ document.addEventListener('DOMContentLoaded', function() {
         className: 'marker-tooltip'
     });
 
-    // Custom overlay class for Google Maps HTML markers
-    class CustomMarkerOverlay extends google.maps.OverlayView {
-        constructor(position, type, name) {
-            super();
-            this.position = position;
-            this.type = type;
-            this.name = name;
-            this.div = null;
-        }
-
-        onAdd() {
-            this.div = document.createElement('div');
-            this.div.style.position = 'absolute';
-            this.div.style.cursor = 'pointer';
-            this.div.style.transform = 'translate(-50%, -50%)';
-
-            const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
-            const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
-
-            this.div.innerHTML = `
-                <div class="custom-marker ${markerClass}" title="${this.name}">
-                    <i class="bi ${iconClass}"></i>
-                </div>
-            `;
-
-            const panes = this.getPanes();
-            panes.overlayMouseTarget.appendChild(this.div);
-        }
-
-        draw() {
-            const overlayProjection = this.getProjection();
-            const pos = overlayProjection.fromLatLngToDivPixel(this.position);
-            if (this.div) {
-                this.div.style.left = pos.x + 'px';
-                this.div.style.top = pos.y + 'px';
-            }
-        }
-
-        onRemove() {
-            if (this.div) {
-                this.div.parentNode.removeChild(this.div);
-                this.div = null;
-            }
-        }
-    }
-
     let googleMarkerOverlay = null;
 
-    // Initialize Google Map
+    // Initialize Google Map (class is defined inside to ensure Google Maps API is loaded)
     function initGoogleMap() {
         if (googleMap) return;
+
+        // Check if Google Maps API is loaded
+        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+            console.error('Google Maps API not loaded');
+            return;
+        }
+
+        // Define CustomMarkerOverlay class here to ensure google.maps is available
+        class CustomMarkerOverlay extends google.maps.OverlayView {
+            constructor(position, type, name) {
+                super();
+                this.position = position;
+                this.type = type;
+                this.name = name;
+                this.div = null;
+            }
+
+            onAdd() {
+                this.div = document.createElement('div');
+                this.div.style.position = 'absolute';
+                this.div.style.cursor = 'pointer';
+                this.div.style.transform = 'translate(-50%, -50%)';
+
+                const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
+                const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
+
+                this.div.innerHTML = `
+                    <div class="custom-marker ${markerClass}" title="${this.name}">
+                        <i class="bi ${iconClass}"></i>
+                    </div>
+                `;
+
+                const panes = this.getPanes();
+                panes.overlayMouseTarget.appendChild(this.div);
+            }
+
+            draw() {
+                const overlayProjection = this.getProjection();
+                const pos = overlayProjection.fromLatLngToDivPixel(this.position);
+                if (this.div) {
+                    this.div.style.left = pos.x + 'px';
+                    this.div.style.top = pos.y + 'px';
+                }
+            }
+
+            onRemove() {
+                if (this.div) {
+                    this.div.parentNode.removeChild(this.div);
+                    this.div = null;
+                }
+            }
+        }
 
         googleMap = new google.maps.Map(document.getElementById('googleMap'), {
             center: { lat: lat, lng: lng },
