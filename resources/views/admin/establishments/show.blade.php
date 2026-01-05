@@ -270,7 +270,63 @@ document.addEventListener('DOMContentLoaded', function() {
         iconAnchor: [18, 18]
     });
 
-    L.marker([lat, lng], { icon: leafletIcon }).addTo(leafletMap);
+    const leafletMarker = L.marker([lat, lng], { icon: leafletIcon }).addTo(leafletMap);
+
+    // Add tooltip with establishment name
+    leafletMarker.bindTooltip('{{ $establishment->name }}', {
+        permanent: false,
+        direction: 'top',
+        offset: [0, -20],
+        className: 'marker-tooltip'
+    });
+
+    // Custom overlay class for Google Maps HTML markers
+    class CustomMarkerOverlay extends google.maps.OverlayView {
+        constructor(position, type, name) {
+            super();
+            this.position = position;
+            this.type = type;
+            this.name = name;
+            this.div = null;
+        }
+
+        onAdd() {
+            this.div = document.createElement('div');
+            this.div.style.position = 'absolute';
+            this.div.style.cursor = 'pointer';
+            this.div.style.transform = 'translate(-50%, -50%)';
+
+            const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
+            const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
+
+            this.div.innerHTML = `
+                <div class="custom-marker ${markerClass}" title="${this.name}">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+            `;
+
+            const panes = this.getPanes();
+            panes.overlayMouseTarget.appendChild(this.div);
+        }
+
+        draw() {
+            const overlayProjection = this.getProjection();
+            const pos = overlayProjection.fromLatLngToDivPixel(this.position);
+            if (this.div) {
+                this.div.style.left = pos.x + 'px';
+                this.div.style.top = pos.y + 'px';
+            }
+        }
+
+        onRemove() {
+            if (this.div) {
+                this.div.parentNode.removeChild(this.div);
+                this.div = null;
+            }
+        }
+    }
+
+    let googleMarkerOverlay = null;
 
     // Initialize Google Map
     function initGoogleMap() {
@@ -287,22 +343,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        const markerColor = type === 'client' ? '#3498db' : '#27ae60';
-        const markerIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: markerColor,
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 3,
-            scale: 12
-        };
-
-        new google.maps.Marker({
-            position: { lat: lat, lng: lng },
-            map: googleMap,
-            icon: markerIcon,
-            title: '{{ $establishment->name }}'
-        });
+        // Create custom HTML marker overlay
+        const position = new google.maps.LatLng(lat, lng);
+        googleMarkerOverlay = new CustomMarkerOverlay(position, type, '{{ $establishment->name }}');
+        googleMarkerOverlay.setMap(googleMap);
     }
 
     // Switch map type
@@ -362,6 +406,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .marker-fournisseur {
     background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+}
+
+.custom-marker:hover {
+    transform: scale(1.15);
+}
+
+/* Tooltip styles */
+.marker-tooltip {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.marker-tooltip::before {
+    border-top-color: #2c3e50;
+}
+.leaflet-tooltip-top:before {
+    border-top-color: #2c3e50;
 }
 
 /* Photo card styles */

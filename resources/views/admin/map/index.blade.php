@@ -258,6 +258,24 @@
 .gm-style .gm-style-iw-d {
     overflow: hidden !important;
 }
+
+/* Tooltip styles */
+.marker-tooltip {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.marker-tooltip::before {
+    border-top-color: #2c3e50;
+}
+.leaflet-tooltip-top:before {
+    border-top-color: #2c3e50;
+}
 </style>
 @endpush
 
@@ -374,6 +392,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon: createLeafletIcon(m.type)
             });
 
+            // Add tooltip with establishment name
+            marker.bindTooltip(m.name, {
+                permanent: false,
+                direction: 'top',
+                offset: [0, -20],
+                className: 'marker-tooltip'
+            });
+
             marker.bindPopup(createPopupContent(m), {
                 closeButton: true,
                 autoClose: true,
@@ -392,6 +418,71 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Custom overlay class for Google Maps HTML markers
+    class CustomMarkerOverlay extends google.maps.OverlayView {
+        constructor(position, type, name, content, infoWindow) {
+            super();
+            this.position = position;
+            this.type = type;
+            this.name = name;
+            this.content = content;
+            this.infoWindow = infoWindow;
+            this.div = null;
+        }
+
+        onAdd() {
+            this.div = document.createElement('div');
+            this.div.style.position = 'absolute';
+            this.div.style.cursor = 'pointer';
+            this.div.style.transform = 'translate(-50%, -50%)';
+
+            const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
+            const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
+
+            this.div.innerHTML = `
+                <div class="custom-marker ${markerClass}" title="${this.name}">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+            `;
+
+            const self = this;
+            this.div.addEventListener('click', function() {
+                self.infoWindow.setContent(self.content);
+                self.infoWindow.setPosition(self.position);
+                self.infoWindow.open(self.getMap());
+            });
+
+            this.div.addEventListener('mouseover', function() {
+                self.infoWindow.setContent(self.content);
+                self.infoWindow.setPosition(self.position);
+                self.infoWindow.open(self.getMap());
+            });
+
+            const panes = this.getPanes();
+            panes.overlayMouseTarget.appendChild(this.div);
+        }
+
+        draw() {
+            const overlayProjection = this.getProjection();
+            const pos = overlayProjection.fromLatLngToDivPixel(this.position);
+            if (this.div) {
+                this.div.style.left = pos.x + 'px';
+                this.div.style.top = pos.y + 'px';
+            }
+        }
+
+        onRemove() {
+            if (this.div) {
+                this.div.parentNode.removeChild(this.div);
+                this.div = null;
+            }
+        }
+
+        setMap(map) {
+            super.setMap(map);
+        }
+    }
+
     // Update Google markers
     function updateGoogleMarkers() {
         if (!googleMap) return;
@@ -404,37 +495,19 @@ document.addEventListener('DOMContentLoaded', function() {
         let infoWindow = new google.maps.InfoWindow();
 
         markersData.forEach(m => {
-            const position = { lat: m.lat, lng: m.lng };
+            const position = new google.maps.LatLng(m.lat, m.lng);
 
-            // Create custom marker icon
-            const markerColor = m.type === 'client' ? '#3498db' : '#27ae60';
-            const markerIcon = {
-                path: google.maps.SymbolPath.CIRCLE,
-                fillColor: markerColor,
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 3,
-                scale: 12
-            };
+            // Create custom HTML marker overlay
+            const overlay = new CustomMarkerOverlay(
+                position,
+                m.type,
+                m.name,
+                createPopupContent(m),
+                infoWindow
+            );
+            overlay.setMap(googleMap);
 
-            const marker = new google.maps.Marker({
-                position: position,
-                map: googleMap,
-                icon: markerIcon,
-                title: m.name
-            });
-
-            marker.addListener('click', function() {
-                infoWindow.setContent(createPopupContent(m));
-                infoWindow.open(googleMap, marker);
-            });
-
-            marker.addListener('mouseover', function() {
-                infoWindow.setContent(createPopupContent(m));
-                infoWindow.open(googleMap, marker);
-            });
-
-            googleMarkers.push(marker);
+            googleMarkers.push(overlay);
             bounds.extend(position);
         });
 
