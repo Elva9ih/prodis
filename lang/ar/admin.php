@@ -268,6 +268,10 @@ return [
         'rassidy' => 'رصيدي',
         'chinguitty_mobile' => 'شنقيطي موبايل',
         'bfi_cash' => 'بي إف آي كاش',
+        'accessoires' => 'إكسسوارات',
+        'pieces_neuves' => 'قطع جديدة',
+        'consommables' => 'مستهلكات',
+        'pieces_occasions' => 'قطع مستعملة',
     ],
 
     // Mobile Connection

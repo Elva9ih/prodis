@@ -268,6 +268,10 @@ return [
         'rassidy' => 'RASSIDY',
         'chinguitty_mobile' => 'CHINGUITTY MOBILE',
         'bfi_cash' => 'BFI CASH',
+        'accessoires' => 'Accessoires',
+        'pieces_neuves' => 'Pièces Neuves',
+        'consommables' => 'Consommables',
+        'pieces_occasions' => 'Pièces Occasions',
     ],
 
     // Mobile Connection
