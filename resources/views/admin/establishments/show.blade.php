@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
     const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
     const establishmentName = '{{ $establishment->name }}';
-    const shortName = establishmentName.length > 12 ? establishmentName.substring(0, 12) + '...' : establishmentName;
+    const shortName = establishmentName.length > 15 ? establishmentName.substring(0, 15) + '...' : establishmentName;
 
     // Initialize Leaflet map
     leafletMap = L.map('leafletMap').setView([lat, lng], 15);
@@ -267,12 +267,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const leafletIcon = L.divIcon({
         html: `<div class="marker-with-label">
+            <div class="marker-label-top ${type}">${shortName}</div>
             <div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>
-            <div class="marker-label">${shortName}</div>
         </div>`,
         className: 'custom-marker-wrapper',
-        iconSize: [36, 56],
-        iconAnchor: [18, 28]
+        iconSize: [120, 50],
+        iconAnchor: [60, 50]
     });
 
     const leafletMarker = L.marker([lat, lng], { icon: leafletIcon }).addTo(leafletMap);
@@ -307,14 +307,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
                 const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
-                const shortName = this.name.length > 12 ? this.name.substring(0, 12) + '...' : this.name;
+                const shortName = this.name.length > 15 ? this.name.substring(0, 15) + '...' : this.name;
 
                 this.div.innerHTML = `
                     <div class="marker-with-label">
+                        <div class="marker-label-top ${this.type}">${shortName}</div>
                         <div class="custom-marker ${markerClass}">
                             <i class="bi ${iconClass}"></i>
                         </div>
-                        <div class="marker-label">${shortName}</div>
                     </div>
                 `;
 
@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
     border: none !important;
 }
 
-/* Marker with label styles */
+/* Marker with label on top */
 .marker-with-label {
     display: flex;
     flex-direction: column;
@@ -402,45 +402,72 @@ document.addEventListener('DOMContentLoaded', function() {
     cursor: pointer;
 }
 
+.marker-label-top {
+    background: #2c3e50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    margin-bottom: 0;
+    position: relative;
+}
+
+.marker-label-top::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #2c3e50;
+}
+
+.marker-label-top.client {
+    background: #2980b9;
+}
+.marker-label-top.client::after {
+    border-top-color: #2980b9;
+}
+
+.marker-label-top.fournisseur {
+    background: #1e8449;
+}
+.marker-label-top.fournisseur::after {
+    border-top-color: #1e8449;
+}
+
 .custom-marker {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 16px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    border: 3px solid white;
-}
-
-.marker-label {
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    border: 2px solid white;
     margin-top: 4px;
-    background: rgba(44, 62, 80, 0.9);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    font-weight: 500;
-    white-space: nowrap;
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .marker-client {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    background: #3498db;
 }
 
 .marker-fournisseur {
-    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+    background: #27ae60;
 }
 
 .marker-with-label:hover .custom-marker {
-    transform: scale(1.15);
+    transform: scale(1.1);
 }
 
 /* Photo card styles */

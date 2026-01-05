@@ -25,10 +25,16 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <input type="datetime-local" id="filterDateFrom" class="form-control form-control-sm" placeholder="{{ __('admin.common.from') }}">
+                        <div class="date-input-wrapper">
+                            <input type="datetime-local" id="filterDateFrom" class="form-control form-control-sm date-input" title="{{ __('admin.common.from') }}">
+                            <span class="date-placeholder">{{ __('admin.common.from') }}</span>
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <input type="datetime-local" id="filterDateTo" class="form-control form-control-sm" placeholder="{{ __('admin.common.to') }}">
+                        <div class="date-input-wrapper">
+                            <input type="datetime-local" id="filterDateTo" class="form-control form-control-sm date-input" title="{{ __('admin.common.to') }}">
+                            <span class="date-placeholder">{{ __('admin.common.to') }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -73,7 +79,7 @@
 
 @push('styles')
 <style>
-/* Marker with label styles */
+/* Marker with label on top */
 .marker-with-label {
     display: flex;
     flex-direction: column;
@@ -81,47 +87,74 @@
     cursor: pointer;
 }
 
+.marker-label-top {
+    background: #2c3e50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    margin-bottom: 0;
+    position: relative;
+}
+
+.marker-label-top::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #2c3e50;
+}
+
+.marker-label-top.client {
+    background: #2980b9;
+}
+.marker-label-top.client::after {
+    border-top-color: #2980b9;
+}
+
+.marker-label-top.fournisseur {
+    background: #1e8449;
+}
+.marker-label-top.fournisseur::after {
+    border-top-color: #1e8449;
+}
+
 .custom-marker {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 16px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    border: 3px solid white;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    border: 2px solid white;
     cursor: pointer;
     transition: transform 0.2s ease;
+    margin-top: 4px;
 }
 
 .marker-with-label:hover .custom-marker {
-    transform: scale(1.15);
-}
-
-.marker-label {
-    margin-top: 4px;
-    background: rgba(44, 62, 80, 0.9);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    font-weight: 500;
-    white-space: nowrap;
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transform: scale(1.1);
 }
 
 .marker-client {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    background: #3498db;
 }
 
 .marker-fournisseur {
-    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+    background: #27ae60;
 }
 
 /* Legend markers */
@@ -291,11 +324,15 @@
     border-radius: 50% !important;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
     opacity: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 .gm-style .gm-ui-hover-effect > span {
     background-color: #333 !important;
-    width: 16px !important;
-    height: 16px !important;
+    width: 14px !important;
+    height: 14px !important;
+    margin: 0 !important;
 }
 
 /* Leaflet popup close button */
@@ -313,6 +350,28 @@
     line-height: 22px !important;
     text-align: center !important;
     z-index: 1000 !important;
+}
+
+/* Date input with placeholder */
+.date-input-wrapper {
+    position: relative;
+}
+.date-input-wrapper .date-placeholder {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    font-size: 0.875rem;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+.date-input-wrapper .date-input:valid + .date-placeholder,
+.date-input-wrapper .date-input:focus + .date-placeholder {
+    opacity: 0;
+}
+.date-input-wrapper .date-input.has-value + .date-placeholder {
+    display: none;
 }
 </style>
 @endpush
@@ -355,21 +414,21 @@ document.addEventListener('DOMContentLoaded', function() {
         viewDetails: '{{ __('admin.common.view_details') }}'
     };
 
-    // Create Leaflet custom icon with name label
+    // Create Leaflet custom icon with name label on top
     function createLeafletIcon(type, name) {
         const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
         const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
-        const shortName = name.length > 12 ? name.substring(0, 12) + '...' : name;
+        const shortName = name.length > 15 ? name.substring(0, 15) + '...' : name;
 
         return L.divIcon({
             html: `<div class="marker-with-label">
+                <div class="marker-label-top ${type}">${shortName}</div>
                 <div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>
-                <div class="marker-label">${shortName}</div>
             </div>`,
             className: 'custom-marker-wrapper',
-            iconSize: [36, 56],
-            iconAnchor: [18, 28],
-            popupAnchor: [0, -30]
+            iconSize: [120, 50],
+            iconAnchor: [60, 50],
+            popupAnchor: [0, -50]
         });
     }
 
@@ -471,14 +530,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
             const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
-            const shortName = this.name.length > 12 ? this.name.substring(0, 12) + '...' : this.name;
+            const shortName = this.name.length > 15 ? this.name.substring(0, 15) + '...' : this.name;
 
             this.div.innerHTML = `
                 <div class="marker-with-label">
+                    <div class="marker-label-top ${this.type}">${shortName}</div>
                     <div class="custom-marker ${markerClass}">
                         <i class="bi ${iconClass}"></i>
                     </div>
-                    <div class="marker-label">${shortName}</div>
                 </div>
             `;
 
@@ -613,8 +672,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners
     document.getElementById('filterType').addEventListener('change', loadMarkers);
     document.getElementById('filterAgent').addEventListener('change', loadMarkers);
-    document.getElementById('filterDateFrom').addEventListener('change', loadMarkers);
-    document.getElementById('filterDateTo').addEventListener('change', loadMarkers);
+
+    // Date inputs with placeholder handling
+    const dateFrom = document.getElementById('filterDateFrom');
+    const dateTo = document.getElementById('filterDateTo');
+
+    dateFrom.addEventListener('change', function() {
+        this.classList.toggle('has-value', this.value !== '');
+        loadMarkers();
+    });
+    dateTo.addEventListener('change', function() {
+        this.classList.toggle('has-value', this.value !== '');
+        loadMarkers();
+    });
+
     document.getElementById('btnRefresh').addEventListener('click', loadMarkers);
     document.getElementById('btnLeaflet').addEventListener('click', switchToLeaflet);
     document.getElementById('btnGoogle').addEventListener('click', switchToGoogle);
