@@ -73,7 +73,14 @@
 
 @push('styles')
 <style>
-/* Marker styles */
+/* Marker with label styles */
+.marker-with-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
 .custom-marker {
     width: 36px;
     height: 36px;
@@ -89,8 +96,24 @@
     transition: transform 0.2s ease;
 }
 
-.custom-marker:hover {
+.marker-with-label:hover .custom-marker {
     transform: scale(1.15);
+}
+
+.marker-label {
+    margin-top: 4px;
+    background: rgba(44, 62, 80, 0.9);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .marker-client {
@@ -258,23 +281,38 @@
 .gm-style .gm-style-iw-d {
     overflow: hidden !important;
 }
+/* Google Maps close button */
+.gm-style .gm-ui-hover-effect {
+    top: 4px !important;
+    right: 4px !important;
+    width: 28px !important;
+    height: 28px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    opacity: 1 !important;
+}
+.gm-style .gm-ui-hover-effect > span {
+    background-color: #333 !important;
+    width: 16px !important;
+    height: 16px !important;
+}
 
-/* Tooltip styles */
-.marker-tooltip {
-    background: #2c3e50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 500;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.marker-tooltip::before {
-    border-top-color: #2c3e50;
-}
-.leaflet-tooltip-top:before {
-    border-top-color: #2c3e50;
+/* Leaflet popup close button */
+.leaflet-popup-close-button {
+    top: 8px !important;
+    right: 8px !important;
+    width: 24px !important;
+    height: 24px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    color: #333 !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    line-height: 22px !important;
+    text-align: center !important;
+    z-index: 1000 !important;
 }
 </style>
 @endpush
@@ -317,18 +355,21 @@ document.addEventListener('DOMContentLoaded', function() {
         viewDetails: '{{ __('admin.common.view_details') }}'
     };
 
-    // Create Leaflet custom icon
-    function createLeafletIcon(type) {
+    // Create Leaflet custom icon with name label
+    function createLeafletIcon(type, name) {
         const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
         const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
+        const shortName = name.length > 12 ? name.substring(0, 12) + '...' : name;
 
         return L.divIcon({
-            html: `<div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>`,
+            html: `<div class="marker-with-label">
+                <div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>
+                <div class="marker-label">${shortName}</div>
+            </div>`,
             className: 'custom-marker-wrapper',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-            popupAnchor: [0, -20],
-            tooltipAnchor: [18, 0]
+            iconSize: [36, 56],
+            iconAnchor: [18, 28],
+            popupAnchor: [0, -30]
         });
     }
 
@@ -389,15 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         markersData.forEach(m => {
             const marker = L.marker([m.lat, m.lng], {
-                icon: createLeafletIcon(m.type)
-            });
-
-            // Add tooltip with establishment name
-            marker.bindTooltip(m.name, {
-                permanent: false,
-                direction: 'top',
-                offset: [0, -20],
-                className: 'marker-tooltip'
+                icon: createLeafletIcon(m.type, m.name)
             });
 
             marker.bindPopup(createPopupContent(m), {
@@ -434,14 +467,18 @@ document.addEventListener('DOMContentLoaded', function() {
             this.div = document.createElement('div');
             this.div.style.position = 'absolute';
             this.div.style.cursor = 'pointer';
-            this.div.style.transform = 'translate(-50%, -50%)';
+            this.div.style.transform = 'translate(-50%, -100%)';
 
             const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
             const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
+            const shortName = this.name.length > 12 ? this.name.substring(0, 12) + '...' : this.name;
 
             this.div.innerHTML = `
-                <div class="custom-marker ${markerClass}" title="${this.name}">
-                    <i class="bi ${iconClass}"></i>
+                <div class="marker-with-label">
+                    <div class="custom-marker ${markerClass}">
+                        <i class="bi ${iconClass}"></i>
+                    </div>
+                    <div class="marker-label">${shortName}</div>
                 </div>
             `;
 

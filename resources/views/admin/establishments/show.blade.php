@@ -255,6 +255,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
     const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
+    const establishmentName = '{{ $establishment->name }}';
+    const shortName = establishmentName.length > 12 ? establishmentName.substring(0, 12) + '...' : establishmentName;
 
     // Initialize Leaflet map
     leafletMap = L.map('leafletMap').setView([lat, lng], 15);
@@ -264,21 +266,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }).addTo(leafletMap);
 
     const leafletIcon = L.divIcon({
-        html: `<div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>`,
+        html: `<div class="marker-with-label">
+            <div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>
+            <div class="marker-label">${shortName}</div>
+        </div>`,
         className: 'custom-marker-wrapper',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        iconSize: [36, 56],
+        iconAnchor: [18, 28]
     });
 
     const leafletMarker = L.marker([lat, lng], { icon: leafletIcon }).addTo(leafletMap);
-
-    // Add tooltip with establishment name
-    leafletMarker.bindTooltip('{{ $establishment->name }}', {
-        permanent: false,
-        direction: 'top',
-        offset: [0, -20],
-        className: 'marker-tooltip'
-    });
 
     let googleMarkerOverlay = null;
 
@@ -306,14 +303,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.div = document.createElement('div');
                 this.div.style.position = 'absolute';
                 this.div.style.cursor = 'pointer';
-                this.div.style.transform = 'translate(-50%, -50%)';
+                this.div.style.transform = 'translate(-50%, -100%)';
 
                 const iconClass = this.type === 'client' ? 'bi-wrench' : 'bi-shop';
                 const markerClass = this.type === 'client' ? 'marker-client' : 'marker-fournisseur';
+                const shortName = this.name.length > 12 ? this.name.substring(0, 12) + '...' : this.name;
 
                 this.div.innerHTML = `
-                    <div class="custom-marker ${markerClass}" title="${this.name}">
-                        <i class="bi ${iconClass}"></i>
+                    <div class="marker-with-label">
+                        <div class="custom-marker ${markerClass}">
+                            <i class="bi ${iconClass}"></i>
+                        </div>
+                        <div class="marker-label">${shortName}</div>
                     </div>
                 `;
 
@@ -393,6 +394,14 @@ document.addEventListener('DOMContentLoaded', function() {
     border: none !important;
 }
 
+/* Marker with label styles */
+.marker-with-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
 .custom-marker {
     width: 36px;
     height: 36px;
@@ -406,6 +415,22 @@ document.addEventListener('DOMContentLoaded', function() {
     border: 3px solid white;
 }
 
+.marker-label {
+    margin-top: 4px;
+    background: rgba(44, 62, 80, 0.9);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
 .marker-client {
     background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
 }
@@ -414,26 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
     background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
 }
 
-.custom-marker:hover {
+.marker-with-label:hover .custom-marker {
     transform: scale(1.15);
-}
-
-/* Tooltip styles */
-.marker-tooltip {
-    background: #2c3e50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 500;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.marker-tooltip::before {
-    border-top-color: #2c3e50;
-}
-.leaflet-tooltip-top:before {
-    border-top-color: #2c3e50;
 }
 
 /* Photo card styles */
