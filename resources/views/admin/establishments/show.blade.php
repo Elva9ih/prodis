@@ -191,11 +191,20 @@
 
         <!-- Location Card -->
         <div class="card mb-4">
-            <div class="card-header bg-transparent">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <h6 class="mb-0"><i class="bi bi-geo-alt"></i> {{ __('admin.establishments.location') }}</h6>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm active" id="btnLeaflet" title="OpenStreetMap">
+                        <i class="bi bi-map"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnGoogle" title="Google Maps">
+                        <i class="bi bi-google"></i>
+                    </button>
+                </div>
             </div>
             <div class="card-body">
-                <div id="establishmentMap" style="height: 250px; border-radius: 0.5rem;"></div>
+                <div id="leafletMap" style="height: 250px; border-radius: 0.5rem;"></div>
+                <div id="googleMap" style="height: 250px; border-radius: 0.5rem; display: none;"></div>
                 <div class="mt-3">
                     <small class="text-muted d-block">
                         <strong>{{ __('admin.establishments.coordinates') }}:</strong> {{ $establishment->latitude }}, {{ $establishment->longitude }}
@@ -222,6 +231,8 @@
 @push('scripts')
 <!-- QRCode.js Library -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key', '') }}&callback=Function.prototype" async defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -235,28 +246,95 @@ document.addEventListener('DOMContentLoaded', function() {
         correctLevel: QRCode.CorrectLevel.H
     });
 
-    // Initialize map
+    // Map variables
     const lat = {{ $establishment->latitude }};
     const lng = {{ $establishment->longitude }};
     const type = '{{ $establishment->type }}';
-
-    const map = L.map('establishmentMap').setView([lat, lng], 15);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    let leafletMap, googleMap;
+    let currentMapType = 'leaflet';
 
     const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
     const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
 
-    const icon = L.divIcon({
+    // Initialize Leaflet map
+    leafletMap = L.map('leafletMap').setView([lat, lng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(leafletMap);
+
+    const leafletIcon = L.divIcon({
         html: `<div class="custom-marker ${markerClass}"><i class="bi ${iconClass}"></i></div>`,
         className: 'custom-marker-wrapper',
         iconSize: [36, 36],
         iconAnchor: [18, 18]
     });
 
-    L.marker([lat, lng], { icon: icon }).addTo(map);
+    L.marker([lat, lng], { icon: leafletIcon }).addTo(leafletMap);
+
+    // Initialize Google Map
+    function initGoogleMap() {
+        if (googleMap) return;
+
+        googleMap = new google.maps.Map(document.getElementById('googleMap'), {
+            center: { lat: lat, lng: lng },
+            zoom: 15,
+            mapTypeId: 'roadmap',
+            mapTypeControl: true,
+            mapTypeControlOptions: {
+                style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                position: google.maps.ControlPosition.TOP_RIGHT
+            }
+        });
+
+        const markerColor = type === 'client' ? '#3498db' : '#27ae60';
+        const markerIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: markerColor,
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 3,
+            scale: 12
+        };
+
+        new google.maps.Marker({
+            position: { lat: lat, lng: lng },
+            map: googleMap,
+            icon: markerIcon,
+            title: '{{ $establishment->name }}'
+        });
+    }
+
+    // Switch map type
+    function switchToLeaflet() {
+        currentMapType = 'leaflet';
+        document.getElementById('leafletMap').style.display = 'block';
+        document.getElementById('googleMap').style.display = 'none';
+        document.getElementById('btnLeaflet').classList.add('active');
+        document.getElementById('btnGoogle').classList.remove('active');
+
+        setTimeout(() => {
+            leafletMap.invalidateSize();
+        }, 100);
+    }
+
+    function switchToGoogle() {
+        currentMapType = 'google';
+        document.getElementById('leafletMap').style.display = 'none';
+        document.getElementById('googleMap').style.display = 'block';
+        document.getElementById('btnLeaflet').classList.remove('active');
+        document.getElementById('btnGoogle').classList.add('active');
+
+        initGoogleMap();
+        setTimeout(() => {
+            google.maps.event.trigger(googleMap, 'resize');
+            googleMap.setCenter({ lat: lat, lng: lng });
+        }, 100);
+    }
+
+    // Event listeners
+    document.getElementById('btnLeaflet').addEventListener('click', switchToLeaflet);
+    document.getElementById('btnGoogle').addEventListener('click', switchToGoogle);
 });
 </script>
 <style>

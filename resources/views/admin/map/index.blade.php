@@ -33,6 +33,14 @@
                 </div>
             </div>
             <div class="col-md-4 text-end">
+                <div class="btn-group btn-group-sm {{ $isRtl ? 'ms-2' : 'me-2' }}" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" id="btnLeaflet" title="OpenStreetMap">
+                        <i class="bi bi-map"></i> OSM
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnGoogle" title="Google Maps">
+                        <i class="bi bi-google"></i> Google
+                    </button>
+                </div>
                 <span id="markerCount" class="badge bg-secondary">0 {{ __('admin.map.markers') }}</span>
                 <button id="btnRefresh" class="btn btn-sm btn-primary {{ $isRtl ? 'me-2' : 'ms-2' }}">
                     <i class="bi bi-arrow-clockwise"></i> {{ __('admin.map.refresh') }}
@@ -41,7 +49,8 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <div id="map" style="height: 600px;"></div>
+        <div id="leafletMap" style="height: 600px;"></div>
+        <div id="googleMap" style="height: 600px; display: none;"></div>
     </div>
 </div>
 
@@ -240,26 +249,43 @@
     color: white;
     font-weight: 600;
 }
+
+/* Google Maps InfoWindow styles */
+.gm-style .gm-style-iw-c {
+    padding: 0 !important;
+    border-radius: 8px !important;
+}
+.gm-style .gm-style-iw-d {
+    overflow: hidden !important;
+}
 </style>
 @endpush
 
 @push('scripts')
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key', '') }}&libraries=marker&callback=Function.prototype" async defer></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize map centered on Mauritania
-    const map = L.map('map').setView([18.0735, -15.9582], 6);
+    let currentMapType = 'leaflet';
+    let leafletMap, googleMap;
+    let leafletMarkers, googleMarkers = [];
+    let markersData = [];
+
+    // Initialize Leaflet map centered on Mauritania
+    leafletMap = L.map('leafletMap').setView([18.0735, -15.9582], 6);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    }).addTo(leafletMap);
 
-    // Marker cluster group
-    const markers = L.markerClusterGroup({
+    // Marker cluster group for Leaflet
+    leafletMarkers = L.markerClusterGroup({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
         maxClusterRadius: 50
     });
-    map.addLayer(markers);
+    leafletMap.addLayer(leafletMarkers);
 
     // Translations
     const translations = {
@@ -273,8 +299,8 @@ document.addEventListener('DOMContentLoaded', function() {
         viewDetails: '{{ __('admin.common.view_details') }}'
     };
 
-    // Create custom icon
-    function createIcon(type) {
+    // Create Leaflet custom icon
+    function createLeafletIcon(type) {
         const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
         const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
 
@@ -320,6 +346,103 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
+    // Initialize Google Map
+    function initGoogleMap() {
+        if (googleMap) return;
+
+        googleMap = new google.maps.Map(document.getElementById('googleMap'), {
+            center: { lat: 18.0735, lng: -15.9582 },
+            zoom: 6,
+            mapTypeId: 'roadmap',
+            mapTypeControl: true,
+            mapTypeControlOptions: {
+                style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                position: google.maps.ControlPosition.TOP_RIGHT
+            }
+        });
+
+        // Load markers on Google Map
+        updateGoogleMarkers();
+    }
+
+    // Update Leaflet markers
+    function updateLeafletMarkers() {
+        leafletMarkers.clearLayers();
+
+        markersData.forEach(m => {
+            const marker = L.marker([m.lat, m.lng], {
+                icon: createLeafletIcon(m.type)
+            });
+
+            marker.bindPopup(createPopupContent(m), {
+                closeButton: true,
+                autoClose: true,
+                className: 'establishment-popup'
+            });
+
+            marker.on('mouseover', function() {
+                this.openPopup();
+            });
+
+            leafletMarkers.addLayer(marker);
+        });
+
+        if (markersData.length > 0) {
+            leafletMap.fitBounds(leafletMarkers.getBounds(), { padding: [50, 50] });
+        }
+    }
+
+    // Update Google markers
+    function updateGoogleMarkers() {
+        if (!googleMap) return;
+
+        // Clear existing markers
+        googleMarkers.forEach(marker => marker.setMap(null));
+        googleMarkers = [];
+
+        const bounds = new google.maps.LatLngBounds();
+        let infoWindow = new google.maps.InfoWindow();
+
+        markersData.forEach(m => {
+            const position = { lat: m.lat, lng: m.lng };
+
+            // Create custom marker icon
+            const markerColor = m.type === 'client' ? '#3498db' : '#27ae60';
+            const markerIcon = {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillColor: markerColor,
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 3,
+                scale: 12
+            };
+
+            const marker = new google.maps.Marker({
+                position: position,
+                map: googleMap,
+                icon: markerIcon,
+                title: m.name
+            });
+
+            marker.addListener('click', function() {
+                infoWindow.setContent(createPopupContent(m));
+                infoWindow.open(googleMap, marker);
+            });
+
+            marker.addListener('mouseover', function() {
+                infoWindow.setContent(createPopupContent(m));
+                infoWindow.open(googleMap, marker);
+            });
+
+            googleMarkers.push(marker);
+            bounds.extend(position);
+        });
+
+        if (markersData.length > 0) {
+            googleMap.fitBounds(bounds);
+        }
+    }
+
     // Load markers
     function loadMarkers() {
         const params = new URLSearchParams({
@@ -332,33 +455,13 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('{{ route('admin.map.data') }}?' + params.toString())
             .then(response => response.json())
             .then(data => {
-                markers.clearLayers();
-
-                data.markers.forEach(m => {
-                    const marker = L.marker([m.lat, m.lng], {
-                        icon: createIcon(m.type)
-                    });
-
-                    // Bind popup (stays open until clicked elsewhere)
-                    marker.bindPopup(createPopupContent(m), {
-                        closeButton: true,
-                        autoClose: true,
-                        className: 'establishment-popup'
-                    });
-
-                    // Open popup on hover
-                    marker.on('mouseover', function() {
-                        this.openPopup();
-                    });
-
-                    markers.addLayer(marker);
-                });
-
+                markersData = data.markers;
                 document.getElementById('markerCount').textContent = data.count + ' {{ __('admin.map.markers') }}';
 
-                // Fit bounds if markers exist
-                if (data.markers.length > 0) {
-                    map.fitBounds(markers.getBounds(), { padding: [50, 50] });
+                if (currentMapType === 'leaflet') {
+                    updateLeafletMarkers();
+                } else {
+                    updateGoogleMarkers();
                 }
             })
             .catch(error => {
@@ -366,15 +469,45 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Switch map type
+    function switchToLeaflet() {
+        currentMapType = 'leaflet';
+        document.getElementById('leafletMap').style.display = 'block';
+        document.getElementById('googleMap').style.display = 'none';
+        document.getElementById('btnLeaflet').classList.add('active');
+        document.getElementById('btnGoogle').classList.remove('active');
+
+        setTimeout(() => {
+            leafletMap.invalidateSize();
+            updateLeafletMarkers();
+        }, 100);
+    }
+
+    function switchToGoogle() {
+        currentMapType = 'google';
+        document.getElementById('leafletMap').style.display = 'none';
+        document.getElementById('googleMap').style.display = 'block';
+        document.getElementById('btnLeaflet').classList.remove('active');
+        document.getElementById('btnGoogle').classList.add('active');
+
+        initGoogleMap();
+        setTimeout(() => {
+            google.maps.event.trigger(googleMap, 'resize');
+            updateGoogleMarkers();
+        }, 100);
+    }
+
     // Initial load
     loadMarkers();
 
-    // Filter handlers
+    // Event listeners
     document.getElementById('filterType').addEventListener('change', loadMarkers);
     document.getElementById('filterAgent').addEventListener('change', loadMarkers);
     document.getElementById('filterDateFrom').addEventListener('change', loadMarkers);
     document.getElementById('filterDateTo').addEventListener('change', loadMarkers);
     document.getElementById('btnRefresh').addEventListener('click', loadMarkers);
+    document.getElementById('btnLeaflet').addEventListener('click', switchToLeaflet);
+    document.getElementById('btnGoogle').addEventListener('click', switchToGoogle);
 });
 </script>
 @endpush
