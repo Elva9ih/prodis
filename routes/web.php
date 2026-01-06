@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MapController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\MobileConnectionController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\DatabaseExportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,6 +23,7 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 // Redirect root to admin
 Route::redirect('/', '/admin');
 
+
 // Admin Authentication
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -31,6 +33,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 // Admin Protected Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    //Export Database
+    Route::get('/export-database', [DatabaseExportController::class, 'export']); // Add your authentication middleware
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
