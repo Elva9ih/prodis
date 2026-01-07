@@ -90,8 +90,13 @@ class SyncController extends Controller
                     }
 
                     // Get city from coordinates using reverse geocoding
-                    $city = $this->getCityFromCoordinates($data['latitude'], $data['longitude']);
-
+                    // $city = $this->getCityFromCoordinates($data['latitude'], $data['longitude']);
+                    $fixedCity = [
+                        'ar' => 'نواكشوط',
+                        'fr' => 'Nouakchott',
+                        'en' => 'Nouakchott',
+                    ];
+                    $city = json_encode($fixedCity,JSON_UNESCAPED_UNICODE);
                     $establishment = Establishment::create([
                         'uuid' => $data['uuid'],
                         'agent_id' => $user->id,
