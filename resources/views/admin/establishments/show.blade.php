@@ -194,17 +194,17 @@
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <h6 class="mb-0"><i class="bi bi-geo-alt"></i> {{ __('admin.establishments.location') }}</h6>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-secondary btn-sm active" id="btnLeaflet" title="OpenStreetMap">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnLeaflet" title="OpenStreetMap">
                         <i class="bi bi-map"></i>
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnGoogle" title="Google Maps">
+                    <button type="button" class="btn btn-outline-secondary btn-sm active" id="btnGoogle" title="Google Maps">
                         <i class="bi bi-google"></i>
                     </button>
                 </div>
             </div>
             <div class="card-body">
-                <div id="leafletMap" style="height: 250px; border-radius: 0.5rem;"></div>
-                <div id="googleMap" style="height: 250px; border-radius: 0.5rem; display: none;"></div>
+                <div id="leafletMap" style="height: 250px; border-radius: 0.5rem; display: none;"></div>
+                <div id="googleMap" style="height: 250px; border-radius: 0.5rem;"></div>
                 <div class="mt-3">
                     <small class="text-muted d-block">
                         <strong>{{ __('admin.establishments.coordinates') }}:</strong> {{ $establishment->latitude }}, {{ $establishment->longitude }}
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const lng = {{ $establishment->longitude }};
     const type = '{{ $establishment->type }}';
     let leafletMap, googleMap;
-    let currentMapType = 'leaflet';
+    let currentMapType = 'google';
 
     const iconClass = type === 'client' ? 'bi-wrench' : 'bi-shop';
     const markerClass = type === 'client' ? 'marker-client' : 'marker-fournisseur';
@@ -386,6 +386,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners
     document.getElementById('btnLeaflet').addEventListener('click', switchToLeaflet);
     document.getElementById('btnGoogle').addEventListener('click', switchToGoogle);
+
+    // Initialize Google Map as default
+    initGoogleMap();
 });
 </script>
 <style>

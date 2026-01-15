@@ -40,10 +40,10 @@
             </div>
             <div class="col-md-4 text-end">
                 <div class="btn-group btn-group-sm {{ $isRtl ? 'ms-2' : 'me-2' }}" role="group">
-                    <button type="button" class="btn btn-outline-secondary active" id="btnLeaflet" title="OpenStreetMap">
+                    <button type="button" class="btn btn-outline-secondary" id="btnLeaflet" title="OpenStreetMap">
                         <i class="bi bi-map"></i> OSM
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnGoogle" title="Google Maps">
+                    <button type="button" class="btn btn-outline-secondary active" id="btnGoogle" title="Google Maps">
                         <i class="bi bi-google"></i> Google
                     </button>
                 </div>
@@ -55,8 +55,8 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <div id="leafletMap" style="height: 600px;"></div>
-        <div id="googleMap" style="height: 600px; display: none;"></div>
+        <div id="leafletMap" style="height: 600px; display: none;"></div>
+        <div id="googleMap" style="height: 600px;"></div>
     </div>
 </div>
 
@@ -382,7 +382,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    let currentMapType = 'leaflet';
+    let currentMapType = 'google';
     let leafletMap, googleMap;
     let leafletMarkers, googleMarkers = [];
     let markersData = [];
@@ -666,7 +666,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
-    // Initial load
+    // Initial load - initialize Google Map first since it's the default
+    initGoogleMap();
     loadMarkers();
 
     // Event listeners
