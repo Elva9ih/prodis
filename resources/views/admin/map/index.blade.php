@@ -55,8 +55,15 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <div id="leafletMap" style="height: 600px; display: none;"></div>
-        <div id="googleMap" style="height: 600px;"></div>
+        <div class="map-container position-relative">
+            <div id="mapLoader" class="map-loader">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading</span>
+                </div>
+            </div>
+            <div id="leafletMap" style="height: 600px; display: none;"></div>
+            <div id="googleMap" style="height: 600px;"></div>
+        </div>
     </div>
 </div>
 
@@ -79,6 +86,26 @@
 
 @push('styles')
 <style>
+/* Map loader styles */
+.map-container {
+    min-height: 600px;
+}
+
+.map-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+}
+
 /* Marker with label on top */
 .marker-with-label {
     display: flex;
@@ -666,9 +693,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
+    // Hide loader
+    function hideLoader() {
+        const loader = document.getElementById('mapLoader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // Wait for Google Maps API to load
+    function waitForGoogleMaps(callback, maxAttempts = 50) {
+        let attempts = 0;
+        const checkGoogle = setInterval(() => {
+            attempts++;
+            if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') {
+                clearInterval(checkGoogle);
+                callback();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkGoogle);
+                console.error('Google Maps API failed to load');
+                hideLoader();
+            }
+        }, 100);
+    }
+
     // Initial load - initialize Google Map first since it's the default
-    initGoogleMap();
-    loadMarkers();
+    waitForGoogleMaps(() => {
+        initGoogleMap();
+        loadMarkers();
+        hideLoader();
+    });
 
     // Event listeners
     document.getElementById('filterType').addEventListener('change', loadMarkers);

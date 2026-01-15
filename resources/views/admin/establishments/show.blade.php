@@ -203,8 +203,15 @@
                 </div>
             </div>
             <div class="card-body">
-                <div id="leafletMap" style="height: 250px; border-radius: 0.5rem; display: none;"></div>
-                <div id="googleMap" style="height: 250px; border-radius: 0.5rem;"></div>
+                <div class="map-container position-relative">
+                    <div id="mapLoader" class="map-loader">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading</span>
+                        </div>
+                    </div>
+                    <div id="leafletMap" style="height: 250px; border-radius: 0.5rem; display: none;"></div>
+                    <div id="googleMap" style="height: 250px; border-radius: 0.5rem;"></div>
+                </div>
                 <div class="mt-3">
                     <small class="text-muted d-block">
                         <strong>{{ __('admin.establishments.coordinates') }}:</strong> {{ $establishment->latitude }}, {{ $establishment->longitude }}
@@ -383,15 +390,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
+    // Hide loader
+    function hideLoader() {
+        const loader = document.getElementById('mapLoader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 300);
+        }
+    }
+
+    // Wait for Google Maps API to load
+    function waitForGoogleMaps(callback, maxAttempts = 50) {
+        let attempts = 0;
+        const checkGoogle = setInterval(() => {
+            attempts++;
+            if (typeof google !== 'undefined' && typeof google.maps !== 'undefined') {
+                clearInterval(checkGoogle);
+                callback();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkGoogle);
+                console.error('Google Maps API failed to load');
+                hideLoader();
+            }
+        }, 100);
+    }
+
     // Event listeners
     document.getElementById('btnLeaflet').addEventListener('click', switchToLeaflet);
     document.getElementById('btnGoogle').addEventListener('click', switchToGoogle);
 
-    // Initialize Google Map as default
-    initGoogleMap();
+    // Initialize Google Map as default (wait for API to load)
+    waitForGoogleMaps(() => {
+        initGoogleMap();
+        hideLoader();
+    });
 });
 </script>
 <style>
+/* Map loader styles */
+.map-container {
+    min-height: 250px;
+}
+
+.map-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: 0.5rem;
+    transition: opacity 0.3s ease;
+}
+
 .custom-marker-wrapper {
     background: transparent !important;
     border: none !important;
